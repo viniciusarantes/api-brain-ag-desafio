@@ -1,3 +1,12 @@
-from django.shortcuts import render
+from rest_framework import viewsets
 
-# Create your views here.
+from rural.models import Producer
+from rural.serializers import ProducerSerializer
+
+
+class ProducerView(viewsets.ModelViewSet):
+    """
+    Manage producer data
+    """
+    queryset = Producer.objects.all()
+    serializer_class = ProducerSerializer
