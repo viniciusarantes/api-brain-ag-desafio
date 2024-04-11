@@ -1,0 +1,30 @@
+# Django #
+*.log
+*.pot
+*.pyc
+__pycache__
+db.sqlite3
+media
+migrations/
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Visual Studio Code #
+.vscode/*
+!.vscode/launch.json
+.history
+
+__pycache__/
+venv
+env
+.DS_Store
+local_settings.py
+_local_settings.py
+db.sqlite3
