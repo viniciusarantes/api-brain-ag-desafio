@@ -6,6 +6,7 @@ from rural.views import (
     ProducerAddCultureView,
     ProducerRemoveCultureView,
     ProducerViewSet,
+    TotalFarmsView,
 )
 
 router = DefaultRouter()
@@ -15,5 +16,6 @@ router.register('culture', CultureViewSet, basename='culture')
 urlpatterns = [
     path('', include(router.urls), name='rural'),
     path('producer/add_culture', ProducerAddCultureView.as_view(), name='addculture'),
-    path('producer/remove_culture', ProducerRemoveCultureView.as_view(), name='removeculture')
+    path('producer/remove_culture', ProducerRemoveCultureView.as_view(), name='removeculture'),
+    path('producer/total', TotalFarmsView.as_view(), name='total')
 ]

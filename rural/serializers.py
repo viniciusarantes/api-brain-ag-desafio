@@ -137,3 +137,22 @@ class ProducerCulturesSerializer(serializers.Serializer):
             )
         return validated_data
 
+
+class TotalFarmsSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Producer
+        fields = '__all__'
+
+    def sum_hectares(self):
+        total = 0
+        for producer in self.instance:
+            total += float(producer.area_fazenda_ha)
+        return '%.2f' % total
+
+    def to_representation(self, instance):
+        data = {
+            "total_fazendas": self.instance.count(),
+            "total_hectares": self.sum_hectares()
+        }
+        return data

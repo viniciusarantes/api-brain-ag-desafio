@@ -8,6 +8,7 @@ from rural.serializers import (
     CultureSerializer,
     ProducerCulturesSerializer,
     ProducerSerializer,
+    TotalFarmsSerializer,
 )
 
 
@@ -52,4 +53,14 @@ class ProducerRemoveCultureView(views.APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
         serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class TotalFarmsView(views.APIView):
+    """
+    Return total of farms to dashboard
+    """
+    def get(self, request):
+        producers = Producer.objects.all()
+        serializer = TotalFarmsSerializer(producers)
         return Response(serializer.data, status=status.HTTP_200_OK)
