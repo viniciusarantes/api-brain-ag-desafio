@@ -3,14 +3,21 @@ import re
 from rest_framework import serializers
 
 from rural.exceptions import CustomValidationException
-from rural.models import Producer
+from rural.models import Planting, Producer
 from rural.validators import ProducerValidator
+
+
+class PlantingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Planting
+        fields = ['id', 'nome', 'ultima_atualizacao']
 
 
 class ProducerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Producer
         fields = '__all__'
+        depth = 1
     
     def create(self, validated_data):
         instance = Producer.objects.create(**validated_data)
