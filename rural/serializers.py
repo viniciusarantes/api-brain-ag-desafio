@@ -1,15 +1,18 @@
 import re
 
-from rest_framework import serializers
+from rest_framework import serializers, status
 
 from rural.exceptions import CustomValidationException
-from rural.models import Planting, Producer
+from rural.models import Culture, Producer
 from rural.validators import ProducerValidator
 
+CULTURE_ADD_ACTION = 'add'
+CULTURE_REMOVE_ACTION = 'remove'
 
-class PlantingSerializer(serializers.ModelSerializer):
+
+class CultureSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Planting
+        model = Culture
         fields = ['id', 'nome', 'ultima_atualizacao']
 
 
@@ -70,4 +73,67 @@ class ProducerSerializer(serializers.ModelSerializer):
 
         return data
 
+
+class ProducerCulturesSerializer(serializers.Serializer):
+    produtor_id = serializers.IntegerField()
+    cultura_vegetal = serializers.ListField(
+        child=serializers.IntegerField(min_value=0)
+    )
+
+    def get_object(self, obj_id, model_class):
+        try:
+            return model_class.objects.get(id=obj_id)
+        except model_class.DoesNotExist:
+            return None
+    
+    def to_representation(self, instance):
+        cultura_vegetal = [
+            dict(id=culture.id, nome=culture.nome) 
+            for culture in instance.cultura_vegetal.all()
+        ]
+        data = {
+            "id": instance.id,
+            "nome_produtor": instance.nome_produtor,
+            "cpf_cnpj": instance.cpf_cnpj,
+            "cultura_vegetal": cultura_vegetal
+        }
+        return data
+    
+    def get_culture_list(self, cultures):
+        obj_cultures, not_found_cultures = list(), list()
+        for culture in cultures:
+            obj_culture = self.get_object(culture, Culture)
+            if obj_culture is None:
+                not_found_cultures.append(culture)
+            else:
+                obj_cultures.append(obj_culture)
+        return obj_cultures, not_found_cultures
+
+    def create(self, validated_data):
+        producer = self.get_object(validated_data.get('produtor_id'), Producer)
+        culture_list, _ = self.get_culture_list(validated_data.get('cultura_vegetal'))
+        if self.context.get('action') == CULTURE_ADD_ACTION:
+            producer.cultura_vegetal.add(*culture_list)
+        elif self.context.get('action') == CULTURE_REMOVE_ACTION:
+            producer.cultura_vegetal.remove(*culture_list)
+        producer.save()
+        return producer
         
+    
+    def validate(self, attrs):
+        validated_data = super().validate(attrs)
+        producer = self.get_object(validated_data.get('produtor_id'), Producer)
+        if not producer:
+            raise CustomValidationException(
+                "Produtor id não encontrado.",
+                status_code=status.HTTP_404_NOT_FOUND
+            )
+        
+        _, not_found = self.get_culture_list(validated_data.get('cultura_vegetal'))
+        if len(not_found) > 0:
+            raise CustomValidationException(
+                f"Culturas Vegetais não encontradas: {','.join(map(str, not_found))}",
+                status_code=status.HTTP_404_NOT_FOUND
+            )
+        return validated_data
+
