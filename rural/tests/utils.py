@@ -63,4 +63,4 @@ class SetupTestMixin:
         producer = self.make_producer()
         culture_list = [self.make_culture() for i in range(qtd_culture)]
         producer.cultura_vegetal.add(*culture_list)
-        return producer
+        return producer, culture_list

@@ -42,10 +42,10 @@ class AddProducerCulturesTest(SetupTestMixin, test.APITestCase):
 class RemoveProducerCulturesTest(SetupTestMixin, test.APITestCase):
     def test_remove_culture_success_200(self):
         api_url = '/producer/remove_culture'
-        producer = self.make_producer_with_culture(2)
+        producer, cultures = self.make_producer_with_culture(2)
         data = {
             "produtor_id": producer.id,
-            "cultura_vegetal": [1]
+            "cultura_vegetal": [cultures[0].id]
         }
         response = self.client.post(api_url, data=data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
