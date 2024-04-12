@@ -10,7 +10,7 @@ class Culture(models.Model):
 
 
 class Producer(models.Model):
-    cpf_cnpj = models.CharField(max_length=18)
+    cpf_cnpj = models.CharField(max_length=18, unique=True)
     nome_produtor = models.CharField(max_length=100)
     nome_fazenda = models.CharField(max_length=100)
     estado = models.CharField(max_length=2, choices=STATE_CHOICES)
