@@ -1,6 +1,10 @@
+import re
+
 from rest_framework import serializers
 
+from rural.exceptions import CustomValidationException
 from rural.models import Producer
+from rural.validators import ProducerValidator
 
 
 class ProducerSerializer(serializers.ModelSerializer):
@@ -8,20 +12,55 @@ class ProducerSerializer(serializers.ModelSerializer):
         model = Producer
         fields = '__all__'
     
-    def to_representation(self, instance):
-        formatted_data = super().to_representation(instance)
-        data = {
-            "id": formatted_data.get("id"),
-            "cpf_cnpj": formatted_data.get("cpf_cnpj"),
-            "nome_produtor": formatted_data.get("name"),
-            "nome_fazenda": formatted_data.get("farm_name"),
-            "cidade": formatted_data.get("city"),
-            "estado": formatted_data.get("state"),
-            "area_fazenda_ha": formatted_data.get("farm_area_ha"),
-            "area_agricultavel_ha": formatted_data.get("agro_area_ha"),
-            "area_vegetacao_ha": formatted_data.get("veg_area_ha"),
-            "cultura_vegetal": formatted_data.get("planting"),
-            "criado_em": formatted_data.get("created"),
-            "ultima_atualizacao": formatted_data.get("updated"),
-        }
+    def create(self, validated_data):
+        instance = Producer.objects.create(**validated_data)
+        instance.cpf_cnpj = re.sub('[^0-9]', '', instance.cpf_cnpj)
+        instance.save()
+        return instance
+    
+    def update(self, instance, validated_data):
+        instance = super().update(instance, validated_data)
+        instance.cpf_cnpj = re.sub('[^0-9]', '', instance.cpf_cnpj)
+        instance.save()
+        return instance
+    
+    def get_area_data(self, data):
+        farm_ha = data.get('area_fazenda_ha', 0)
+        agro_ha = data.get('area_agricultavel_ha', 0)
+        veg_ha = data.get('area_vegetacao_ha', 0)
+
+        obj_farm_ha = 0 if self.instance is None else self.instance.area_fazenda_ha
+        obj_agro_ha = 0 if self.instance is None else self.instance.area_agricultavel_ha
+        obj_veg_ha = 0 if self.instance is None else self.instance.area_vegetacao_ha
+        return (
+            farm_ha or obj_farm_ha, 
+            agro_ha or obj_agro_ha, 
+            veg_ha or obj_veg_ha
+        )
+    
+    def get_cpf_cnpj(self, data):
+        cpf_cnpj = data.get('cpf_cnpj', '')
+        obj_cpf_cnpj = '' if self.instance is None else self.instance.cpf_cnpj
+        return cpf_cnpj or obj_cpf_cnpj
+    
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        cpf_cnpj = self.get_cpf_cnpj(data)
+        doc_is_valid = ProducerValidator.validate_cpf_cnpj(cpf_cnpj)
+        if not doc_is_valid:
+            raise CustomValidationException(
+                "CPF/CNPJ inválido. Digite um documento válido"
+            )
+        
+        farm_ha, agro_ha, veg_ha = self.get_area_data(data)
+        area_is_valid = ProducerValidator.validate_farm_area(
+            farm_ha=farm_ha, agro_ha=agro_ha, veg_ha=veg_ha
+        )
+        if not area_is_valid:
+            raise CustomValidationException(
+                "Total da área agritultável e vegetação ultrapassa a área total da fazenda."
+            )
+
         return data
+
+        
